@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 class RiftColors {
-  static const background = Color(0xFF0C1119);
-  static const surface = Color(0xFF151E2A);
-  static const raised = Color(0xFF1F2A38);
-  static const gold = Color(0xFFF4BB72);
-  static const teal = Color(0xFF30D4C7);
+  static const background = Color(0xFF131316);
+  static const surface = Color(0xFF1B1B21);
+  static const raised = Color(0xFF2B2931);
+  static const gold = Color(0xFFF69C52);
+  static const teal = Color(0xFFF35C83);
   static const coral = Color(0xFFFF746B);
   static const text = Color(0xFFF4F7FB);
-  static const muted = Color(0xFFA7B3C3);
+  static const muted = Color(0xFFB5B0BA);
 }
 
 ThemeData buildRiftTheme() {
