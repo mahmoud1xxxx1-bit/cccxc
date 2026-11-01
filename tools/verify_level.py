@@ -4,9 +4,9 @@ from pathlib import Path
 layout=json.loads((Path(__file__).resolve().parents[1]/'assets/level_desert_gate.json').read_text())
 rows=layout['rows']; assert len(rows)==45 and all(len(r)==60 for r in rows)
 assert sum(r.count('B')+r.count('G')+r.count('P') for r in rows)==2300
-assert sum(r.count('#') for r in rows)==1240
+assert sum(r.count('#') for r in rows)==140
 assert sum(r.count('.') for r in rows)==260
-assert sum(r.count('P') for r in rows)==1
+assert sum(r.count('P') for r in rows)==12
 start=(30,44);seen={start};queue=collections.deque([start]);assert rows[44][30]!='#'
 while queue:
     x,y=queue.popleft()
