@@ -55,7 +55,9 @@ class PixelRiftGame extends Game {
   void movePaddle(double screenX) {
     if (session.status == RunStatus.paused ||
         session.status == RunStatus.won ||
-        session.status == RunStatus.lost) return;
+        session.status == RunStatus.lost) {
+      return;
+    }
     final scale = math.min(size.x / worldWidth, size.y / worldHeight);
     if (scale <= 0) { return; }
     final offset = (size.x - worldWidth * scale) / 2;
