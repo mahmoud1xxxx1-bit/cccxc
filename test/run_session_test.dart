@@ -6,7 +6,7 @@ void main() {
     final run = RunSession();
     expect(run.status, RunStatus.ready);
     expect(run.launch(), isTrue);
-    for (var i=0;i<2299;i++) run.breakPixels(1);
+    for (var i=0;i<2299;i++) { run.breakPixels(1); }
     expect(run.pixelsDestroyed, 2299);
     expect(run.status, RunStatus.playing);
     run.breakPixels(1);

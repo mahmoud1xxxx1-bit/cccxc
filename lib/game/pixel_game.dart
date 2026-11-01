@@ -57,7 +57,7 @@ class PixelRiftGame extends Game {
         session.status == RunStatus.won ||
         session.status == RunStatus.lost) return;
     final scale = math.min(size.x / worldWidth, size.y / worldHeight);
-    if (scale <= 0) return;
+    if (scale <= 0) { return; }
     final offset = (size.x - worldWidth * scale) / 2;
     paddleX = ((screenX - offset) / scale).clamp(paddleHalfWidth + 0.3, worldWidth - paddleHalfWidth - 0.3).toDouble();
     if (session.status == RunStatus.ready && _balls.isNotEmpty) {

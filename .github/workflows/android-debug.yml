@@ -23,9 +23,12 @@ jobs:
           from pathlib import Path
           import io, tarfile, base64
           encoded = Path(".bootstrap/source.tar.gz.base64").read_text().strip()
-          with tarfile.open(fileobj=io.BytesIO(base64.b64decode(encoded)), mode="r:gz") as archive:
-              archive.extractall(".")
-          print("Restored Flutter, Flame, UI, tests and original level map")
+          if Path("lib/main.dart").exists():
+              print("Using tracked Flutter source")
+          else:
+              with tarfile.open(fileobj=io.BytesIO(base64.b64decode(encoded)), mode="r:gz") as archive:
+                  archive.extractall(".")
+              print("Restored Flutter source from starter bundle")
           PY
       - name: Verify 2,300 pixel map
         run: python3 tools/verify_level.py
@@ -38,6 +41,8 @@ jobs:
           cache: true
       - name: Generate Android app project
         run: flutter create --platforms=android --org com.pixelrift --project-name pixel_rift .
+      - name: Remove Flutter template test
+        run: rm -f test/widget_test.dart
       - name: Set visible application name
         run: |
           sed -i 's/android:label="pixel_rift"/android:label="PIXEL RIFT"/' android/app/src/main/AndroidManifest.xml
