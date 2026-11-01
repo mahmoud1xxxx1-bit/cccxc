@@ -1,0 +1,24 @@
+name: pixel_rift
+version: 0.1.0+1
+description: PIXEL RIFT prototype — Desert Gate, 2,300 pixels, original arcade game.
+publish_to: none
+
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flame: ^1.38.2
+  flame_audio: ^2.12.2
+  shared_preferences: ^2.5.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/audio/
