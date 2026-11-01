@@ -10,6 +10,6 @@ void main() {
     expect(bricks, 2300);
     expect('#'.allMatches(chars).length, 140);
     expect('.'.allMatches(chars).length, 260);
-    expect('P'.allMatches(chars).length, 1);
+    expect('P'.allMatches(chars).length, 12);
   });
 }
