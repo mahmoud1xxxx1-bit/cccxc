@@ -46,10 +46,15 @@ class PixelRiftGame extends Game {
   double paddleX = 30;
   static const double worldWidth = 60;
   static const double worldHeight = 72;
-  static const double mapY = 2.0;
-  static const double paddleY = 64.6;
-  static const double paddleHalfWidth = 5.6;
-  static const double ballRadius = 0.46;
+  static const double mapY = 1.3;
+  static const double paddleY = 65.7;
+  static const double paddleHalfWidth = 5.2;
+  static const double ballRadius = 0.37;
+  static const int maxActiveBalls = 300;
+  int get activeBallCount => _balls.length;
+  int _pendingBroken = 0;
+  int _cracked = 0;
+  int _nextBonus = 90;
   static const double _step = 1 / 120;
 
   void movePaddle(double screenX) {
@@ -73,8 +78,8 @@ class PixelRiftGame extends Game {
     final ball = _balls.first;
     ball.x = paddleX;
     ball.y = paddleY - 1.1;
-    ball.vx = 8.5;
-    ball.vy = -29;
+    ball.vx = 10.5;
+    ball.vy = -52;
     sound.play('launch');
   }
 
@@ -99,18 +104,18 @@ class PixelRiftGame extends Game {
 
   void _advance(double dt) {
     for (final pickup in List<_Pickup>.of(_pickups)) {
-      pickup.y += 9 * dt;
+      pickup.y += 23 * dt;
       if (pickup.y >= paddleY - 0.8 &&
           pickup.y <= paddleY + 1.0 &&
           (pickup.x - paddleX).abs() < paddleHalfWidth + 0.6) {
         _pickups.remove(pickup);
-        _tripleBall();
-        sound.play('powerup');
+        collectMultiball();
       } else if (pickup.y > worldHeight) {
         _pickups.remove(pickup);
       }
     }
 
+    _pendingBroken = 0;
     for (final b in List<_Ball>.of(_balls)) {
       if (session.status != RunStatus.playing) return;
       final travel = math.sqrt(b.vx * b.vx + b.vy * b.vy) * dt;
@@ -125,6 +130,16 @@ class PixelRiftGame extends Game {
       if (b.y > worldHeight + 1) _balls.remove(b);
     }
 
+    if (_pendingBroken > 0 && session.status == RunStatus.playing) {
+      _cracked += _pendingBroken;
+      session.breakPixels(_pendingBroken);
+      sound.play('pixel', intervalMs: 25);
+      if (_cracked >= _nextBonus && session.status == RunStatus.playing) {
+        _pickups.add(_Pickup(paddleX, mapY + 43));
+        _nextBonus += math.max(110, 215 - _cracked ~/ 15);
+      }
+      if (session.status == RunStatus.won) sound.play('victory');
+    }
     if (_balls.isEmpty && session.status == RunStatus.playing) {
       session.loseAllBalls();
       sound.play('lost');
@@ -134,16 +149,20 @@ class PixelRiftGame extends Game {
     }
   }
 
-  void _tripleBall() {
-    if (_balls.isEmpty || _balls.length >= 24) return;
-    final source = _balls.first;
-    final vx = source.vx, vy = source.vy;
-    for (final angle in [-0.25, 0.25]) {
-      if (_balls.length >= 24) break;
-      final cosA = math.cos(angle), sinA = math.sin(angle);
-      _balls.add(_Ball(source.x, source.y,
-          vx * cosA - vy * sinA, vx * sinA + vy * cosA));
+  /// Collecting x3 multiplies ALL active balls until a 300-ball cap.
+  /// 1 -> 3 -> 9 -> 27 -> 81 -> 243. Additional pickups fill to 300.
+  void collectMultiball() {
+    if (session.status != RunStatus.playing || _balls.isEmpty) return;
+    for (final b in List<_Ball>.of(_balls)) {
+      for (final angle in const [-0.23, 0.23]) {
+        if (_balls.length >= maxActiveBalls) break;
+        final ca = math.cos(angle), sa = math.sin(angle);
+        _balls.add(_Ball(b.x, b.y,
+            b.vx * ca - b.vy * sa, b.vx * sa + b.vy * ca));
+      }
+      if (_balls.length >= maxActiveBalls) break;
     }
+    sound.play('powerup', intervalMs: 110);
   }
 
   void _moveAxis(_Ball b, double dt, {required bool horizontal}) {
@@ -167,7 +186,7 @@ class PixelRiftGame extends Game {
         (x - paddleX).abs() <= paddleHalfWidth + ballRadius) {
       b.y = paddleY - ballRadius - 0.1;
       final normalized = ((x - paddleX) / paddleHalfWidth).clamp(-1.0, 1.0).toDouble();
-      final speed = math.sqrt(b.vx * b.vx + b.vy * b.vy).clamp(26.0, 42.0).toDouble();
+      final speed = math.sqrt(b.vx * b.vx + b.vy * b.vy).clamp(48.0, 70.0).toDouble();
       b.vx = speed * math.sin(normalized * 1.05) + (normalized.abs() < .10 ? 2.1 : 0);
       b.vy = -math.sqrt(math.max(100, speed * speed - b.vx * b.vx));
       sound.play('paddle', intervalMs: 45);
@@ -185,8 +204,7 @@ class PixelRiftGame extends Game {
           _cells[row][col] = 0;
           _mapDirty = true;
           if (type == 4) _pickups.add(_Pickup(col + 0.5, mapY + row + 0.5));
-          session.breakPixels(1);
-          if (session.status == RunStatus.won) sound.play('victory');
+          _pendingBroken++;
         }
       }
       if (horizontal) {
@@ -194,7 +212,7 @@ class PixelRiftGame extends Game {
       } else {
         b.vy = -b.vy;
       }
-      sound.play(metal ? 'wall' : 'pixel', intervalMs: metal ? 90 : 55);
+      sound.play(metal ? 'wall' : 'pixel', intervalMs: metal ? 65 : 26);
       return;
     }
     if (horizontal) {
@@ -233,23 +251,20 @@ class PixelRiftGame extends Game {
         final tile = _cells[y][x];
         if (tile == 0) continue;
         if (tile == 3) {
-          paint.color = const Color(0xFF758292);
+          paint.color = const Color(0xFF858486);
         } else if (tile == 2) {
-          paint.color = const Color(0xFFF4BB72);
+          paint.color = const Color(0xFFFDA14B);
         } else if (tile == 4) {
-          paint.color = const Color(0xFF30D4C7);
+          paint.color = const Color(0xFFFFC94C);
         } else {
           final shade = (x * 3 + y * 5) % 5;
           paint.color = [
-            const Color(0xFFB97E52), const Color(0xFFC88B59),
-            const Color(0xFFD39B65), const Color(0xFFC48755),
-            const Color(0xFFAD754C),
+            const Color(0xFFDE6D24), const Color(0xFFE77529),
+            const Color(0xFFDA671E), const Color(0xFFE27229),
+            const Color(0xFFD96721),
           ][shade];
         }
-        c.drawRRect(RRect.fromRectAndRadius(
-          Rect.fromLTWH(x + 0.045, mapY + y + 0.045, 0.91, 0.91),
-          const Radius.circular(0.11),
-        ), paint);
+        c.drawRect(Rect.fromLTWH(x + 0.065, mapY + y + 0.065, 0.87, 0.87), paint);
       }
     }
     _cachedMap = recorder.endRecording();
@@ -265,31 +280,31 @@ class PixelRiftGame extends Game {
         (size.y - worldHeight * scale) / 2);
     canvas.scale(scale);
     canvas.drawRect(const Rect.fromLTWH(0, 0, worldWidth, worldHeight),
-        Paint()..color = const Color(0xFF101721));
+        Paint()..color = const Color(0xFF171719));
     canvas.drawRRect(
       RRect.fromRectAndRadius(const Rect.fromLTWH(0, 1.5, 60, 45.9), const Radius.circular(0.4)),
-      Paint()..color = const Color(0xFF2A231F),
+      Paint()..color = const Color(0xFF171719),
     );
     if (_mapDirty || _cachedMap == null) _rebuildMap();
     canvas.drawPicture(_cachedMap!);
     canvas.drawRect(const Rect.fromLTWH(0, 47.2, 60, 0.65),
-        Paint()..color = const Color(0xFF465667));
+        Paint()..color = const Color(0xFF6F6C6E));
     // Subtle kicker accents (all gameplay state remains in logical coordinates).
     canvas.drawRRect(
         RRect.fromRectAndRadius(Rect.fromLTWH(paddleX - paddleHalfWidth, paddleY,
             paddleHalfWidth * 2, 1.2), const Radius.circular(0.55)),
-        Paint()..color = const Color(0xFFFF9A74));
+        Paint()..color = const Color(0xFFF35C83));
     for (final ball in _balls) {
       if (!reduceEffects && session.status == RunStatus.playing) {
         canvas.drawCircle(Offset(ball.x - ball.vx * 0.018, ball.y - ball.vy * 0.018),
-            0.65, Paint()..color = const Color(0x55B7FAFF));
+            0.65, Paint()..color = const Color(0x44FFFFFF));
       }
       canvas.drawCircle(Offset(ball.x, ball.y), ballRadius,
-          Paint()..color = const Color(0xFFF4F7FB));
+          Paint()..color = const Color(0xFFFAFBFC));
     }
     for (final p in _pickups) {
       canvas.drawCircle(Offset(p.x, p.y), 1.5,
-          Paint()..color = const Color(0xFF30D4C7));
+          Paint()..color = const Color(0xFFB9E34D));
       final t = ui.ParagraphBuilder(ui.ParagraphStyle(textAlign: TextAlign.center, fontSize: 2.1))
         ..pushStyle(ui.TextStyle(color: const Color(0xFF0C1119), fontWeight: ui.FontWeight.bold))
         ..addText('x3');
